@@ -23,6 +23,8 @@ MainWindow::MainWindow(QWidget *parent)
     m_player->setVolume(70);
     ui->labelVolume->setText(QString("Volume: ").append(QString::number(m_player->volume())));
     ui->horizontalSliderVolume->setValue(m_player->volume());
+
+    //           Class work
 }
 
 MainWindow::~MainWindow()
