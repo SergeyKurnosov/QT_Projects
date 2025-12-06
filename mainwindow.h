@@ -21,6 +21,13 @@ private slots:
 
     void on_pushButtonPlay_clicked();
 
+    void on_horizontalSliderVolume_valueChanged(int value);
+
+  //  void on_horizontalSliderTime_sliderMoved(int position);
+
+    void updateSlider(qint64 position);
+    void setSliderRange(qint64 duration);
+
 private:
     Ui::MainWindow *ui;
     QMediaPlayer* m_player;

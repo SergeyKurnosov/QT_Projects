@@ -46,12 +46,40 @@ void MainWindow::on_pushButtonAdd_clicked()
 
     ui->labelFileName->setText(QString("File: ").append(file));
     this->m_player->setMedia(QUrl(file));
-    this->m_player->play();
+
+    connect(m_player, &QMediaPlayer::positionChanged, this, &MainWindow::updateSlider);
+    connect(m_player, &QMediaPlayer::durationChanged, this, &MainWindow::setSliderRange);
+    ui->horizontalSliderTime->setMaximum(static_cast<int>(m_player->duration()));
+
+
 }
 
 
 void MainWindow::on_pushButtonPlay_clicked()
 {
     this->m_player->play();
+}
+
+
+void MainWindow::on_horizontalSliderVolume_valueChanged(int value)
+{
+    m_player->setVolume(value);
+    ui->labelVolume->setText(QString("Volume: ").append(QString::number(m_player->volume())));
+}
+
+void MainWindow::updateSlider(qint64 position)
+{
+    ui->horizontalSliderTime->setValue(static_cast<int>(position));
+    ui->labelTime->setText(QString("Time: ").append(QString("%1:%2")
+                                                    .arg(m_player->position() / 60000, 2, 10, QChar('0'))
+                                                    .arg((m_player->position() / 1000) % 60, 2, 10, QChar('0'))));
+}
+
+void MainWindow::setSliderRange(qint64 duration)
+{
+    ui->horizontalSliderTime->setMaximum(static_cast<int>(duration));
+    ui->labelDuration->setText(QString("Duration: ").append(QString("%1:%2")
+                                                            .arg(m_player->duration() / 60000, 2, 10, QChar('0'))
+                                                            .arg((m_player->duration() / 1000) % 60, 2, 10, QChar('0'))));
 }
 
