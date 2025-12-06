@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 #include <QStyle>
 #include <QFileDialog>
+#include <QTime>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -24,7 +25,9 @@ MainWindow::MainWindow(QWidget *parent)
     ui->labelVolume->setText(QString("Volume: ").append(QString::number(m_player->volume())));
     ui->horizontalSliderVolume->setValue(m_player->volume());
 
-    //           Class work
+    connect(m_player, &QMediaPlayer::durationChanged, this, &MainWindow::on_duration_changed);
+    connect(m_player, &QMediaPlayer::positionChanged, this, &MainWindow::on_position_changed);
+    connect(this->ui->horizontalSliderTime, &QSlider::sliderMoved, this, &MainWindow::on_horizontalSliderTime_sliderMoved);
 }
 
 MainWindow::~MainWindow()
@@ -40,16 +43,17 @@ void MainWindow::on_pushButtonAdd_clicked()
     (
       this,
       "Open file",
-      "",
+      "D:\\ProjectHW\\Audio_Player\\Audio_Player\\Tracks",
       "Audio files (*.mp3 *.flac);; MP-3 (*.mp3);; Flac (*.flac)"
     );
 
     ui->labelFileName->setText(QString("File: ").append(file));
     this->m_player->setMedia(QUrl(file));
 
-    connect(m_player, &QMediaPlayer::positionChanged, this, &MainWindow::updateSlider);
-    connect(m_player, &QMediaPlayer::durationChanged, this, &MainWindow::setSliderRange);
+
     ui->horizontalSliderTime->setMaximum(static_cast<int>(m_player->duration()));
+
+    ui->horizontalSliderVolume->setRange(0,100);
 
 
 }
@@ -64,22 +68,46 @@ void MainWindow::on_pushButtonPlay_clicked()
 void MainWindow::on_horizontalSliderVolume_valueChanged(int value)
 {
     m_player->setVolume(value);
-    ui->labelVolume->setText(QString("Volume: ").append(QString::number(m_player->volume())));
+    ui->labelVolume->setText(QString("Volume: ").append(QString::number(value)));
 }
 
-void MainWindow::updateSlider(qint64 position)
+
+
+void MainWindow::on_pushButtonPause_clicked()
 {
-    ui->horizontalSliderTime->setValue(static_cast<int>(position));
-    ui->labelTime->setText(QString("Time: ").append(QString("%1:%2")
-                                                    .arg(m_player->position() / 60000, 2, 10, QChar('0'))
-                                                    .arg((m_player->position() / 1000) % 60, 2, 10, QChar('0'))));
+    m_player->state() == QMediaPlayer::State::PausedState ? m_player->play() : this->m_player->pause();
 }
 
-void MainWindow::setSliderRange(qint64 duration)
+
+void MainWindow::on_pushButtonStop_clicked()
 {
-    ui->horizontalSliderTime->setMaximum(static_cast<int>(duration));
-    ui->labelDuration->setText(QString("Duration: ").append(QString("%1:%2")
-                                                            .arg(m_player->duration() / 60000, 2, 10, QChar('0'))
-                                                            .arg((m_player->duration() / 1000) % 60, 2, 10, QChar('0'))));
+    this->m_player->stop();
+}
+
+
+void MainWindow::on_pushButtonMute_clicked()
+{
+    m_player->setMuted(!m_player->isMuted());
+    ui->pushButtonMute->setIcon(style()->standardIcon(m_player->isMuted() ? QStyle::SP_MediaVolumeMuted : QStyle::SP_MediaVolume));
+}
+
+void MainWindow::on_duration_changed(qint64 duration)
+{
+    this->ui->horizontalSliderTime->setRange(0,duration);
+    this->ui->labelDuration->setText(QTime::fromMSecsSinceStartOfDay(duration).toString("hh:mm:ss"));
+}
+
+void MainWindow::on_position_changed(qint64 position)
+{
+    this->ui->labelPosition->setText(QString(QTime::fromMSecsSinceStartOfDay(position).toString("hh:mm:ss")));
+    this->ui->horizontalSliderTime->setValue(position);
+}
+
+
+
+
+void MainWindow::on_horizontalSliderTime_sliderMoved(qint64 position)
+{
+    this->m_player->setPosition(position);
 }
 

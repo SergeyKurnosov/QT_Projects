@@ -23,10 +23,17 @@ private slots:
 
     void on_horizontalSliderVolume_valueChanged(int value);
 
-  //  void on_horizontalSliderTime_sliderMoved(int position);
+    void on_pushButtonPause_clicked();
 
-    void updateSlider(qint64 position);
-    void setSliderRange(qint64 duration);
+    void on_pushButtonStop_clicked();
+
+    void on_pushButtonMute_clicked();
+
+    void on_duration_changed(qint64 duration);
+    void on_position_changed(qint64 position);
+
+
+    void on_horizontalSliderTime_sliderMoved(qint64 position);
 
 private:
     Ui::MainWindow *ui;
