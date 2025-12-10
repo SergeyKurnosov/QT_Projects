@@ -18,6 +18,8 @@ MainWindow::MainWindow(QWidget *parent)
     ui->pushButtonPause->setIcon(style()->standardIcon(QStyle::SP_MediaPause));
     ui->pushButtonStop->setIcon(style()->standardIcon(QStyle::SP_MediaStop));
     ui->pushButtonMute->setIcon(style()->standardIcon(QStyle::SP_MediaVolume));
+   // ui->pushButtonShuffle->setIcon(style()->standardIcon(QStyle::Arrow));
+   // ui->pushButtonLoop->setIcon(style()->standardIcon(QStyle::SP_BrowserReload));
 
     //          Player init
     m_player = new QMediaPlayer();
@@ -31,7 +33,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     //          play list init
     m_playlist_model = new QStandardItemModel(this);
-    this->ui->tableViewPlayList->setModel(m_playlist_model);
+   /* this->ui->tableViewPlayList->setModel(m_playlist_model);
 
     m_playlist_model->setHorizontalHeaderLabels(QStringList()<< "Audio track" << "Files path" << "Duration");
     this->ui->tableViewPlayList->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -40,7 +42,9 @@ MainWindow::MainWindow(QWidget *parent)
     this->ui->tableViewPlayList->hideColumn(1);
     int duration_with = 64;
     this->ui->tableViewPlayList->setColumnWidth(2, duration_with);
-    this->ui->tableViewPlayList->setColumnWidth(0,this->ui->tableViewPlayList->width() - duration_with*1.7);
+    this->ui->tableViewPlayList->setColumnWidth(0,this->ui->tableViewPlayList->width() - duration_with*1.7);*/
+
+    initPlaylist();
 
     m_playlist = new QMediaPlaylist(m_player);
     m_player->setPlaylist(m_playlist);
@@ -49,7 +53,11 @@ MainWindow::MainWindow(QWidget *parent)
     connect(this->ui->pushButtonNext, &QPushButton::clicked, this->m_playlist, &QMediaPlaylist::next);
     connect(this->m_playlist, &QMediaPlaylist::currentIndexChanged, this->ui->tableViewPlayList, &QTableView::selectRow);
     connect(this->ui->tableViewPlayList, &QTableView::doubleClicked,
-            [this](const QModelIndex& index){m_playlist->setCurrentIndex(index.row()); this->m_player->play();}
+            [this](const QModelIndex& index)
+    {
+        m_playlist->setCurrentIndex(index.row());
+        this->m_player->play();
+    }
             );
     connect(this->m_player, &QMediaPlayer::currentMediaChanged,
             [this](const QMediaContent& media)
@@ -59,6 +67,11 @@ MainWindow::MainWindow(QWidget *parent)
     }
 
             );
+    shuffle = false;
+    loop = false;
+
+   // connect(this->ui->pushButtonClr, &QPushButton::clicked, this->m_playlist, &QMediaPlaylist::clear);
+   // connect(this->ui->pushButtonClr, &QPushButton::clicked, this->m_playlist_model, &QStandardItemModel::clear);
 }
 
 MainWindow::~MainWindow()
@@ -69,24 +82,28 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+void MainWindow::initPlaylist()
+{
+    this->ui->tableViewPlayList->setModel(m_playlist_model);
+
+    m_playlist_model->setHorizontalHeaderLabels(QStringList()<< "Audio track" << "Files path" << "Duration");
+    this->ui->tableViewPlayList->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    this->ui->tableViewPlayList->setSelectionBehavior(QAbstractItemView::SelectRows);
+
+    this->ui->tableViewPlayList->hideColumn(1);
+    int duration_with = 64;
+    this->ui->tableViewPlayList->setColumnWidth(2, duration_with);
+    this->ui->tableViewPlayList->setColumnWidth(0,this->ui->tableViewPlayList->width() - duration_with*1.7);
+}
+
 void MainWindow::loadFileToPlaylist(const QString &filename)
 {
     m_playlist->addMedia(QUrl(filename));
     QList<QStandardItem*> items;
     items.append(new QStandardItem(QDir(filename).dirName()));
     items.append(new QStandardItem(filename));
-  //  QMediaPlayer player;
-  //  player.setMedia(QUrl(filename));
-    m_duration_player.setMedia(QUrl(filename));
- //   m_duration_player.play();
-   // player.play();
-   // player.pause();
-    //items.append(new QStandardItem(QTime::fromMSecsSinceStartOfDay(player.duration()).toString("mm:ss")));
-    items.append(new QStandardItem(QString::number(m_duration_player.duration())));
-    m_duration_player.pause();
+    items.append(new QStandardItem());
     m_playlist_model->appendRow(items);
-
-
 }
 
 
@@ -110,9 +127,12 @@ void MainWindow::on_pushButtonAdd_clicked()
                 "D:\\ProjectHW\\Audio_Player\\Audio_Player\\Tracks",
                 "Audio files(*.mp3 *.flac *.flacc);; mp3 (*.mp3);; Flac (*flac *.flac)"
              );
+    int i = 0;
     for(QString file:files)
     {
         loadFileToPlaylist(file);
+        this->m_playlist_model->setItem(i,2,new QStandardItem(QTime::fromMSecsSinceStartOfDay(m_player->duration()).toString("hh:mm:ss")));
+  ++i;
     }
 
 }
@@ -168,5 +188,62 @@ void MainWindow::on_position_changed(qint64 position)
 void MainWindow::on_horizontalSliderTime_sliderMoved(qint64 position)
 {
     this->m_player->setPosition(position);
+}
+
+
+
+
+
+void MainWindow::on_pushButtonShuffle_clicked()
+{
+    shuffle = !shuffle;
+    this->ui->pushButtonShuffle->setCheckable(true);
+    this->m_playlist->setPlaybackMode(shuffle ? QMediaPlaylist::PlaybackMode::Random : QMediaPlaylist::PlaybackMode::Sequential);
+    this->ui->pushButtonShuffle->setChecked(shuffle);
+}
+
+
+void MainWindow::on_pushButtonLoop_clicked()
+{
+    loop = !loop;
+    this->ui->pushButtonLoop->setCheckable(true);
+    this->m_playlist->setPlaybackMode(loop ? QMediaPlaylist::PlaybackMode::Loop : QMediaPlaylist::PlaybackMode::Sequential);
+    this->ui->pushButtonLoop->setChecked(loop);
+}
+
+
+void MainWindow::on_pushButtonDel_clicked()
+{
+    /*QItemSelectionModel* selection = ui->tableViewPlayList->selectionModel();
+    QModelIndexList indexes = selection->selectedRows();
+    for(QModelIndex i : indexes)
+    {
+        m_playlist_model->removeRow(i.row());
+        m_playlist->removeMedia(i.row());
+    }*/
+
+    QItemSelectionModel* selection = nullptr;
+    do
+    {
+        selection = ui->tableViewPlayList->selectionModel();
+        if(selection == nullptr)
+            break;
+        QModelIndexList indexes = selection->selectedRows();
+        if(selection->selectedRows().count()>0)
+        {
+            m_playlist_model->removeRow(indexes.first().row());
+            m_playlist->removeMedia(indexes.first().row());
+        }
+
+    }while(selection->selectedRows().count());
+}
+
+
+void MainWindow::on_pushButtonClr_clicked()
+{
+    m_playlist->clear();
+    m_playlist_model->clear();
+
+    initPlaylist();
 }
 
