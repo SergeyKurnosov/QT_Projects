@@ -21,6 +21,9 @@ public:
     void initPlaylist();
 
     void loadFileToPlaylist(const QString& filename);
+    void savePlaylistAsM3U(const QString &filename);
+    void loadPlaylistFromM3U(const QString &filename);
+
 
 private slots:
     void on_pushButtonAdd_clicked();
@@ -49,6 +52,10 @@ private slots:
     void on_pushButtonDel_clicked();
 
     void on_pushButtonClr_clicked();
+
+    void on_pushButtonDir_clicked();
+
+
 
 private:
     Ui::MainWindow *ui;
