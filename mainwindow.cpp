@@ -70,15 +70,17 @@ MainWindow::MainWindow(QWidget *parent)
     shuffle = false;
     loop = false;
 
-    loadPlaylistFromM3U(QString("D:\\QTProjects\\MediaPlayerPD_411\\SaveTracks.m3u8"));
+    // loadPlaylistFromM3U(QString("D:\\QTProjects\\MediaPlayerPD_411\\SaveTracks.m3u8"));
+     loadPlaylistFromM3U("playlist.m3u");
    // connect(this->ui->pushButtonClr, &QPushButton::clicked, this->m_playlist, &QMediaPlaylist::clear);
    // connect(this->ui->pushButtonClr, &QPushButton::clicked, this->m_playlist_model, &QStandardItemModel::clear);
+
 }
 
 MainWindow::~MainWindow()
 {
 
-    savePlaylistAsM3U(QString("D:\\QTProjects\\MediaPlayerPD_411\\SaveTracks.m3u8"));
+  //  savePlaylistAsM3U("playlist.m3u");
     delete m_playlist_model;
     delete m_playlist;
     delete m_player;
@@ -99,8 +101,18 @@ void MainWindow::initPlaylist()
     this->ui->tableViewPlayList->setColumnWidth(0,this->ui->tableViewPlayList->width() - duration_with*1.7);
 }
 
+bool isAudioExtension(const QString filename)
+{
+    if(filename.split('.').last() == "mp3")return true;
+    if(filename.split('.').last() == "flac")return true;
+    if(filename.split('.').last() == "flacc")return true;
+
+    return false;
+}
 void MainWindow::loadFileToPlaylist(const QString &filename)
 {
+    if(!isAudioExtension(filename))return;
+
     m_playlist->addMedia(QUrl::fromLocalFile(filename));
     QList<QStandardItem*> items;
     items.append(new QStandardItem(QDir(filename).dirName()));
@@ -110,7 +122,7 @@ void MainWindow::loadFileToPlaylist(const QString &filename)
 }
 
 void MainWindow::savePlaylistAsM3U(const QString &filename) {
-    QFile file(filename);
+  /*  QFile file(filename);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
         return;
     QTextStream out(&file);
@@ -121,12 +133,16 @@ void MainWindow::savePlaylistAsM3U(const QString &filename) {
         out << "#EXTINF:-1,Track " << (i + 1) << "\n"; // -1 — длина неизвестна
         out << urlStr << "\n";
     }
-    file.close();
+    file.close(); */
+
+    QString format = filename.split('.').last();
+    QUrl url = QUrl::fromLocalFile(filename);
+    bool result = m_playlist->save(url, format.toStdString().c_str());
 }
 
 void MainWindow::loadPlaylistFromM3U(const QString &filename) {
     QFile file(filename);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+ /*   if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
         return;
     QTextStream in(&file);
     m_playlist->clear();
@@ -136,8 +152,33 @@ void MainWindow::loadPlaylistFromM3U(const QString &filename) {
         if (line.isEmpty() || line.startsWith("#"))
             continue;
         loadFileToPlaylist(line);
+    } */
+
+  //  QVector<QString> lines =
+    m_playlist->load(QUrl::fromLocalFile(filename));
+    int n = m_playlist->mediaCount();
+    for(int i =0; i<n; i++)
+    {
+        QList<QStandardItem*> item;
+        item.append(new QStandardItem(m_playlist->media(i).canonicalUrl().fileName()));
+        item.append(new QStandardItem(m_playlist->media(i).canonicalUrl().path()));
+        m_playlist_model->appendRow(item);
     }
 
+}
+
+QVector<QString> MainWindow::loadPlaylistToArray(const QString &filename)
+{
+    QFile file(filename);
+    file.open(QIODevice::ReadOnly);
+    QList<QString> lines;
+    while(!file.atEnd())
+    {
+        QByteArray line = file.readLine();
+        lines.append(line);
+    }
+    file.close();
+    return lines.toVector();
 }
 
 void MainWindow::on_pushButtonAdd_clicked()
@@ -275,10 +316,31 @@ void MainWindow::on_pushButtonClr_clicked()
     initPlaylist();
 }
 
+void MainWindow::traverceDirectories(const QString& dirname)
+{
+
+    QDir dir = QDir(dirname);
+    //dir.setFilter("Audio files(*.mp3 *.flac *.flacc);; mp3 (*.mp3);; Flac (*flac *.flac)");
+    for(QFileInfo file : dir.entryList())
+    {
+        if(file.fileName() == "." || file.fileName() == "..")continue;
+
+        if(file.isFile())
+        {
+            QString filename = dir.filePath(file.fileName());
+            loadFileToPlaylist(filename);
+        }
+        if(file.isDir())
+        {
+            traverceDirectories(dir.filePath(file.fileName()));
+        }
+
+    }
+}
 
 void MainWindow::on_pushButtonDir_clicked()
 {
-    QString dirPath = QFileDialog::getExistingDirectory(this, "Open dir", "D:\\ProjectHW\\Audio_Player\\Audio_Player");
+   /* QString dirPath = QFileDialog::getExistingDirectory(this, "Open dir", "D:\\ProjectHW\\Audio_Player\\Audio_Player");
     if(dirPath.isEmpty())
         return;
 
@@ -288,8 +350,17 @@ void MainWindow::on_pushButtonDir_clicked()
     dir.setNameFilters(filter);
     QFileInfoList fileList = dir.entryInfoList(filter, QDir::Files);
     for(QFileInfo &fileInfo : fileList)
-        loadFileToPlaylist(fileInfo.absoluteFilePath());
+        loadFileToPlaylist(fileInfo.absoluteFilePath()); */
 
+    QString dirname = QFileDialog::getExistingDirectory
+            (
+                this,
+                "Add dir",
+                "D:\\ProjectHW\\Audio_Player\\Audio_Player",
+                QFileDialog::ShowDirsOnly
+                );
+
+    this->traverceDirectories(dirname);
 }
 
 

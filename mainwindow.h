@@ -21,8 +21,10 @@ public:
     void initPlaylist();
 
     void loadFileToPlaylist(const QString& filename);
+
     void savePlaylistAsM3U(const QString &filename);
     void loadPlaylistFromM3U(const QString &filename);
+    QVector<QString> loadPlaylistToArray(const QString& filename);
 
 
 private slots:
@@ -58,6 +60,9 @@ private slots:
 
 
 private:
+
+    void traverceDirectories(const QString& dirname);
+
     Ui::MainWindow *ui;
     QMediaPlayer* m_player;
     QMediaPlaylist* m_playlist;
